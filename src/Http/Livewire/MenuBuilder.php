@@ -72,15 +72,29 @@ class MenuBuilder extends Component implements HasActions, HasForms
 
     public function editAction(): Action
     {
+        $panel = Filament::getCurrentPanel();
+        if (! $panel) {
+            throw new \RuntimeException('No active Filament panel');
+        }
+
+        /** @var FilamentMenuBuilderPlugin|null $plugin */
+        $plugin = $panel->getPlugin('filament-menu-builder');
+        if (! $plugin instanceof FilamentMenuBuilderPlugin) {
+            throw new \RuntimeException('Filament Menu Builder plugin not registered');
+        }
+
+        $menuItemResource = $plugin->getMenuItemResource();
+        $menuItemModel = $plugin->getMenuItemModel();
+
         // TODO: extend action and make new edit action for this component
         return Action::make('edit')
             ->tooltip(__('filament-menu-builder::menu-builder.edit_menu_item_tooltip'))
             ->size(Size::ExtraSmall)
             ->icon('heroicon-m-pencil-square')
             ->iconButton()
-            ->fillForm(function (array $arguments) {
+            ->fillForm(function (array $arguments) use ($menuItemModel) {
                 $menuItemId = $arguments['menuItemId'] ?? throw new \InvalidArgumentException('menuItemId is required');
-                $menuItem = MenuItem::find($menuItemId);
+                $menuItem = $menuItemModel::find($menuItemId);
 
                 if (! $menuItem) {
                     throw new \RuntimeException("Menu item with ID {$menuItemId} not found");
@@ -90,12 +104,12 @@ class MenuBuilder extends Component implements HasActions, HasForms
             })
             ->schema([
                 Grid::make()
-                    ->schema(MenuItemResource::getFormSchema()),
+                    ->schema($menuItemResource::getFormSchema()),
             ])
-            ->action(function (array $arguments, $data) {
+            ->action(function (array $arguments, $data) use ($menuItemModel) {
                 $menuItemId = $arguments['menuItemId'] ?? throw new \InvalidArgumentException('menuItemId is required');
 
-                $menuItem = MenuItem::find($menuItemId);
+                $menuItem = $menuItemModel::find($menuItemId);
                 if (! $menuItem) {
                     throw new \RuntimeException("Menu item with ID {$menuItemId} not found");
                 }
@@ -113,6 +127,20 @@ class MenuBuilder extends Component implements HasActions, HasForms
 
     public function createSubItemAction(): Action
     {
+        $panel = Filament::getCurrentPanel();
+        if (! $panel) {
+            throw new \RuntimeException('No active Filament panel');
+        }
+
+        /** @var FilamentMenuBuilderPlugin|null $plugin */
+        $plugin = $panel->getPlugin('filament-menu-builder');
+        if (! $plugin instanceof FilamentMenuBuilderPlugin) {
+            throw new \RuntimeException('Filament Menu Builder plugin not registered');
+        }
+
+        $menuItemResource = $plugin->getMenuItemResource();
+        $menuItemModel = $plugin->getMenuItemModel();
+
         // TODO: extend action and make new edit action for this component
         return Action::make('createSubItem')
             ->tooltip(__('filament-menu-builder::menu-builder.create_sub_item_tooltip'))
@@ -121,17 +149,17 @@ class MenuBuilder extends Component implements HasActions, HasForms
             ->iconButton()
             ->schema([
                 Grid::make()
-                    ->schema(MenuItemResource::getFormSchema()),
+                    ->schema($menuItemResource::getFormSchema()),
             ])
-            ->action(function (array $arguments, $data) {
+            ->action(function (array $arguments, $data) use ($menuItemModel) {
                 $menuItemId = $arguments['menuItemId'] ?? throw new \InvalidArgumentException('menuItemId is required');
 
-                $parent = MenuItem::find($menuItemId);
+                $parent = $menuItemModel::find($menuItemId);
                 if (! $parent) {
                     throw new \RuntimeException("Menu item with ID {$menuItemId} not found");
                 }
 
-                $menuItem = MenuItem::create([
+                $menuItem = $menuItemModel::create([
                     ...$data,
                     'menu_id' => $this->menuId,
                 ]);
