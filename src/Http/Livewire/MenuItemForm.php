@@ -4,11 +4,11 @@ namespace Biostate\FilamentMenuBuilder\Http\Livewire;
 
 use Biostate\FilamentMenuBuilder\FilamentMenuBuilderPlugin;
 use Biostate\FilamentMenuBuilder\Models\MenuItem;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
-use Filament\Actions\Concerns\InteractsWithActions;
-use Filament\Actions\Contracts\HasActions;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Livewire\Component;
@@ -18,10 +18,10 @@ use Livewire\Component;
  * @property array|null $data
  * @property \Filament\Schemas\Schema $form
  */
-class MenuItemForm extends Component implements HasSchemas, HasActions
+class MenuItemForm extends Component implements HasActions, HasSchemas
 {
-    use InteractsWithSchemas;
     use InteractsWithActions;
+    use InteractsWithSchemas;
 
     public int $menuId;
 
@@ -65,16 +65,29 @@ class MenuItemForm extends Component implements HasSchemas, HasActions
 
     public function submit(): void
     {
+        $panel = Filament::getCurrentPanel();
+        if (! $panel) {
+            throw new \RuntimeException('No active Filament panel');
+        }
+
+        /** @var FilamentMenuBuilderPlugin|null $plugin */
+        $plugin = $panel->getPlugin('filament-menu-builder');
+        if (! $plugin instanceof FilamentMenuBuilderPlugin) {
+            throw new \RuntimeException('Filament Menu Builder plugin not registered');
+        }
+
+        $menuItemModel = $plugin->getMenuItemModel();
+
         $menuItem = array_merge($this->data, [
             'menu_id' => $this->menuId,
         ]);
 
-        $menuItem = MenuItem::query()->create($menuItem);
+        $menuItem = $menuItemModel::query()->create($menuItem);
 
         $this->form->model($menuItem)->saveRelationships();
 
         $this->form->fill();
-        $this->form->model(new MenuItem())->fill();
+        $this->form->model(new MenuItem)->fill();
 
         $this->dispatch('menu-item-created', menuId: $this->menuId, menuItemId: $menuItem->id);
     }
