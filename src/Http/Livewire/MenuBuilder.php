@@ -122,6 +122,7 @@ class MenuBuilder extends Component implements HasActions, HasForms
                 }
 
                 $menuItem->update($data);
+                $this->getMountedActionSchema()->model($menuItem)->saveRelationships();
             });
     }
 
@@ -164,6 +165,7 @@ class MenuBuilder extends Component implements HasActions, HasForms
                     'menu_id' => $this->menuId,
                 ]);
                 $parent->appendNode($menuItem);
+                $this->getMountedActionSchema()->model($menuItem)->saveRelationships();
             });
     }
 
